@@ -52,7 +52,8 @@ background-color:blue;
 	var rows, cols []float64
 	var gf, kf func(float64, float64) float64
 
-	if false {
+	const glucoseRows = false
+	if glucoseRows {
 		rows, cols = glucose, ketones
 		gf = func(row, col float64) float64 {
 			return row
