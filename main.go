@@ -4,7 +4,47 @@ import (
 	"fmt"
 	"math"
 	"os"
+
+	"github.com/lucasb-eyer/go-colorful"
 )
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+// potentially lightens a color
+func lighten(s string) string {
+	x, err := colorful.Hex(s)
+	check(err)
+	h, c, l := x.Hcl()
+	return colorful.Hcl(h, c, l).Hex()
+}
+
+func neg() string {
+	c, err := colorful.Hex("#ffcccc")
+	check(err)
+	return c.Hex()
+}
+
+func low() string {
+	c, err := colorful.Hex("#ffff00")
+	check(err)
+	return c.Hex()
+}
+
+func med() string {
+	c, err := colorful.Hex("#ccffcc")
+	check(err)
+	return c.Hex()
+}
+
+func high() string {
+	c, err := colorful.Hex("#ccccff")
+	check(err)
+	return c.Hex()
+}
 
 func main() {
 	w := os.Stdout
@@ -24,30 +64,30 @@ td,th{
 }
 
 .neg {
-background-color:#fcc;
+background-color:%s;
 }
 
 .low {
-background-color:yellow;
+background-color:%s;
 }
 
 .med {
-background-color:green;
+background-color:%s;
 }
 
 .high {
-background-color:blue;
+background-color:%s;
 }
 
 </style>
   </head>
   <body>
-`)
+`, lighten(neg()), lighten(low()), lighten(med()), lighten(high()))
 
 	fmt.Fprintf(w, `<table>`)
 
-	glucose := gen(50, 150, 5)
-	ketones := rev(gen(0.1, 4.0, 0.1))
+	glucose := gen(50, 150, 21)
+	ketones := reverse(gen(0.1, 4.0, 40))
 
 	var rows, cols []float64
 	var gf, kf func(float64, float64) float64
@@ -83,14 +123,15 @@ background-color:blue;
 			g, k := gf(row, col), kf(row, col)
 			i := gki(g, k)
 			var class string
+			// per https://keto-mojo.com/glucose-ketone-index-gki/
 			switch {
-			case i < 1:
+			case i <= 1: // ≤1 highest therapeutic level of ketosis
 				class = "neg"
-			case i < 3:
+			case i < 3: // 1-3: high therapeutic level of ketosis
 				class = "low"
-			case i < 6:
+			case i < 6: // 3-6: moderate level of ketosis
 				class = "med"
-			case i < 9:
+			case i < 9: // 6-9: low level of ketosis ("ideal")
 				class = "high"
 			}
 			if false {
@@ -103,7 +144,7 @@ background-color:blue;
 	fmt.Fprintf(w, `</table></body></html>`)
 }
 
-func rev(in []float64) (out []float64) {
+func reverse(in []float64) (out []float64) {
 	n := len(in)
 	for i := range in {
 		out = append(out, in[n-i-1])
@@ -111,9 +152,10 @@ func rev(in []float64) (out []float64) {
 	return
 }
 
-func gen(x0, x1, dx float64) (out []float64) {
-	for x := x0; x <= x1; x += dx {
-		out = append(out, x)
+func gen(x0, x1 float64, n int) (out []float64) {
+	dx := (x1 - x0) / float64(n-1)
+	for i := 0; i < n; i++ {
+		out = append(out, x0+float64(i)*dx)
 	}
 	return
 }
